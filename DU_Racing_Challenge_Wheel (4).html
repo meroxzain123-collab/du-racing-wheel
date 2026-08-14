@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DU Racing — Challenge Wheel</title>
+<style>
+  :root{
+    --black: #060607;
+    --black-soft: #0e0f11;
+    --panel: #131417;
+    --seg-a: #16171b;
+    --seg-b: #1d1f24;
+    --gold: #e8b923;
+    --gold-hi: #ffd75e;
+    --gold-dim: #8a6c1a;
+    --gray: #5a5f68;
+    --gray-lt: #8b909a;
+    --gray-dk: #2a2c31;
+    --white: #f2f0e8;
+    --danger-glow: rgba(232,185,35,0.55);
+    --radius-card: 18px;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--black);
+    color:var(--white);
+    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+    overflow-x:hidden;
+  }
+
+  body{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    position:relative;
+    padding: clamp(14px, 3vw, 28px);
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(232,185,35,0.08), transparent 55%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 2px, transparent 2px, transparent 10px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 2px, transparent 2px, transparent 10px),
+      var(--black);
+  }
+
+  /* faint technical grid lines */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(rgba(232,185,35,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,185,35,0.035) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse at 50% 30%, black, transparent 75%);
+    z-index:0;
+  }
+
+  .stage{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width: 560px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---------- BRANDING ---------- */
+  .brand{
+    text-align:center;
+    margin-bottom: clamp(10px, 2.4vw, 18px);
+    width:100%;
+  }
+  .brand .eyebrow{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family: 'Courier New', monospace;
+    font-size: clamp(9px, 2.1vw, 11px);
+    letter-spacing: 4px;
+    color: var(--gold-hi);
+    opacity:0.85;
+    margin-bottom:6px;
+  }
+  .brand .eyebrow .line{
+    height:1px; width:26px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim));
+  }
+  .brand .eyebrow .line.r{ background: linear-gradient(90deg, var(--gold-dim), transparent); }
+
+  .brand h1{
+    margin:0;
+    font-family: 'Arial Black', Impact, 'Segoe UI', sans-serif;
+    font-weight:900;
+    font-size: clamp(30px, 8.4vw, 52px);
+    letter-spacing: 2px;
+    line-height:0.95;
+    color: var(--white);
+    text-shadow: 0 0 22px rgba(232,185,35,0.18);
+  }
+  .brand h1 span{
+    color: var(--gold);
+    text-shadow: 0 0 26px var(--danger-glow);
+  }
+  .brand h2{
+    margin: 6px 0 0;
+    font-family: 'Arial Narrow', Arial, sans-serif;
+    font-weight:700;
+    font-size: clamp(11px, 3vw, 15px);
+    letter-spacing: 7px;
+    color: var(--gray-lt);
+    text-transform:uppercase;
+  }
+
+  /* ---------- WHEEL ---------- */
+  .wheel-zone{
+    position:relative;
+    width: min(84vw, 420px);
+    aspect-ratio: 1/1;
+    margin: clamp(14px,3vw,22px) 0 clamp(8px,2vw,14px);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .pointer{
+    position:absolute;
+    top:-4px;
+    left:50%;
+    transform: translateX(-50%);
+    z-index:30;
+    width: clamp(30px,7vw,40px);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+  }
+
+  .rim-outer{
+    position:absolute;
+    inset:-3%;
+    border-radius:50%;
+    background:
+      conic-gradient(from 0deg,
+        #45484f, #6a6f78, #2c2e33, #6a6f78, #45484f, #2c2e33,
+        #6a6f78, #45484f, #2c2e33, #6a6f78, #45484f, #2c2e33, #45484f);
+    box-shadow:
+      0 0 0 2px rgba(0,0,0,0.6),
+      0 18px 40px rgba(0,0,0,0.65),
+      inset 0 0 18px rgba(0,0,0,0.7);
+  }
+  .rim-inner{
+    position:absolute;
+    inset: 3.2%;
+    border-radius:50%;
+    background: radial-gradient(circle at 50% 50%, #0c0d0f 60%, #060607 100%);
+    box-shadow: inset 0 0 0 2px rgba(232,185,35,0.35), inset 0 0 22px rgba(0,0,0,0.9);
+  }
+
+  .wheel-disc{
+    position:absolute;
+    inset: 6%;
+    border-radius:50%;
+    will-change: transform;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+  }
+  .wheel-disc svg{ width:100%; height:100%; display:block; }
+
+  .hub{
+    position:absolute;
+    z-index:25;
+    width: 21%;
+    aspect-ratio:1/1;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 35% 30%, #4a4e56, #202226 60%, #0c0d0f 100%);
+    box-shadow:
+      0 0 0 3px rgba(232,185,35,0.55),
+      0 0 18px rgba(0,0,0,0.7),
+      inset 0 2px 4px rgba(255,255,255,0.15),
+      inset 0 -4px 8px rgba(0,0,0,0.7);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hub span{
+    font-family:'Arial Black', Impact, sans-serif;
+    font-weight:900;
+    font-size: clamp(11px, 2.6vw, 16px);
+    color: var(--gold-hi);
+    letter-spacing:1px;
+    text-shadow: 0 0 8px rgba(0,0,0,0.8);
+  }
+
+  .seg-label{
+    fill: var(--white);
+    font-family:'Arial', 'Segoe UI', sans-serif;
+    font-weight:800;
+    text-transform:uppercase;
+    paint-order: stroke;
+    stroke: rgba(0,0,0,0.55);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+
+  /* ---------- CONTROLS ---------- */
+  .controls{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    margin-top: 4px;
+  }
+
+  .spin-btn{
+    position:relative;
+    min-width: 220px;
+    padding: 16px 44px;
+    border-radius: 10px;
+    border: none;
+    cursor:pointer;
+    font-family:'Arial Black', Impact, sans-serif;
+    font-weight:900;
+    font-size: clamp(16px, 4.4vw, 20px);
+    letter-spacing: 3px;
+    color: var(--black);
+    background: linear-gradient(180deg, var(--gold-hi), var(--gold) 60%, var(--gold-dim));
+    box-shadow:
+      0 2px 0 #7a5e15,
+      0 10px 24px rgba(232,185,35,0.28),
+      inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: transform .12s ease, box-shadow .12s ease, filter .2s ease;
+    -webkit-user-select:none; user-select:none;
+    clip-path: polygon(6% 0%, 100% 0%, 94% 100%, 0% 100%);
+  }
+  .spin-btn:hover{ filter:brightness(1.06); transform: translateY(-1px); }
+  .spin-btn:active{ transform: translateY(2px); box-shadow: 0 0 0 #7a5e15, 0 4px 10px rgba(232,185,35,0.25), inset 0 1px 0 rgba(255,255,255,0.4); }
+  .spin-btn:disabled{
+    cursor:not-allowed;
+    filter: grayscale(0.5) brightness(0.65);
+    transform:none;
+  }
+
+  .sound-btn{
+    width:42px; height:42px;
+    border-radius:50%;
+    border:1px solid var(--gray-dk);
+    background: var(--panel);
+    color: var(--gray-lt);
+    font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .sound-btn:hover{ border-color: var(--gold-dim); color: var(--gold-hi); }
+
+  .status-line{
+    font-family:'Courier New', monospace;
+    font-size: clamp(10px, 2.6vw, 12px);
+    letter-spacing:2px;
+    color: var(--gray-lt);
+    text-transform:uppercase;
+    min-height: 16px;
+    text-align:center;
+  }
+
+  /* ---------- RESULT OVERLAY ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    z-index:100;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background: rgba(4,4,5,0.78);
+    backdrop-filter: blur(3px);
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+
+  .result-card{
+    position:relative;
+    width:100%; max-width:400px;
+    padding: 30px 26px 26px;
+    text-align:center;
+    background: linear-gradient(180deg, #17181c, #0c0d0f);
+    border: 1px solid rgba(232,185,35,0.4);
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 20px 60px rgba(0,0,0,0.7), 0 0 60px rgba(232,185,35,0.15);
+    transform: scale(0.85) translateY(10px);
+    transition: transform .3s cubic-bezier(.2,1.4,.4,1);
+    overflow:hidden;
+  }
+  .overlay.show .result-card{ transform: scale(1) translateY(0); }
+
+  .result-card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:4px;
+    background: repeating-linear-gradient(90deg, var(--gold) 0 14px, #111 14px 28px);
+  }
+
+  .result-eyebrow{
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--gray-lt);
+  }
+  .result-name{
+    margin: 10px 0 4px;
+    font-family:'Arial Black', Impact, sans-serif;
+    font-weight:900;
+    font-size: clamp(24px, 7vw, 34px);
+    line-height:1.05;
+    color: var(--gold-hi);
+    text-shadow: 0 0 24px var(--danger-glow);
+  }
+  .result-sub{
+    font-size:12px;
+    color: var(--gray-lt);
+    letter-spacing:1px;
+    margin-bottom: 20px;
+  }
+
+  .again-btn{
+    width:100%;
+    padding: 13px 20px;
+    border-radius:8px;
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    color: var(--gold-hi);
+    font-family:'Arial Black', Impact, sans-serif;
+    font-weight:900;
+    font-size:14px;
+    letter-spacing:2.5px;
+    cursor:pointer;
+    transition: background .2s, color .2s;
+  }
+  .again-btn:hover{ background: var(--gold); color:#0c0d0f; }
+
+  .close-x{
+    position:absolute; top:10px; right:12px;
+    background:none; border:none;
+    color: var(--gray-lt);
+    font-size:18px;
+    cursor:pointer;
+    line-height:1;
+  }
+
+  canvas.confetti{
+    position:fixed; inset:0; z-index:110;
+    pointer-events:none;
+  }
+
+  footer.credit{
+    margin-top: 18px;
+    font-family:'Courier New', monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    color: #3a3d42;
+    text-align:center;
+  }
+
+  @media (max-width: 380px){
+    .spin-btn{ min-width: 180px; padding:14px 30px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="brand">
+    <div class="eyebrow"><span class="line"></span> FORMULA STUDENT TEAM <span class="line r"></span></div>
+    <h1>DU <span>RACING</span></h1>
+    <h2>Challenge Wheel</h2>
+  </div>
+
+  <div class="wheel-zone">
+    <svg class="pointer" viewBox="0 0 40 46">
+      <polygon points="20,44 4,6 20,16 36,6" fill="#e8b923" stroke="#0c0d0f" stroke-width="2" stroke-linejoin="round"/>
+      <polygon points="20,44 12,10 20,16 28,10" fill="#ffd75e"/>
+    </svg>
+
+    <div class="rim-outer"></div>
+    <div class="rim-inner"></div>
+
+    <div class="wheel-disc" id="wheelDisc">
+      <svg id="wheelSvg" viewBox="0 0 500 500"></svg>
+    </div>
+
+    <div class="hub"><span>DU</span></div>
+  </div>
+
+  <div class="controls">
+    <button class="spin-btn" id="spinBtn">SPIN</button>
+    <div class="status-line" id="statusLine">TAP SPIN TO START</div>
+    <button class="sound-btn" id="soundBtn" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <footer class="credit">DU RACING — DAMIETTA UNIVERSITY · CHALLENGE WHEEL v1.0</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <button class="close-x" id="closeX">✕</button>
+    <div class="result-eyebrow">YOU GOT</div>
+    <div class="result-name" id="resultName">—</div>
+    <div class="result-sub">GOOD LUCK ON THE TRACK</div>
+    <button class="again-btn" id="againBtn" style="display:none;">SPIN AGAIN</button>
+  </div>
+</div>
+
+<canvas class="confetti" id="confettiCanvas"></canvas>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= CATEGORIES ================= */
+  // Real / False alternate: R F R F R F R F R F
+  var categories = [
+    "TECHNICAL\nCHALLENGE",
+    "FALSE",
+    "GUESS THE\nPART",
+    "FALSE",
+    "GIFT",
+    "FALSE",
+    "SECOND\nCHANCE",
+    "FALSE",
+    "TEAM\nPHOTO",
+    "FALSE"
+  ];
+  var SEGMENTS = categories.length;
+  var SEG_ANGLE = 360 / SEGMENTS;
+  var CX = 250, CY = 250;
+  var OUTER_R = 236;
+  var INNER_R = 58;
+  var BOLT_R = 224;
+
+  /* ================= BUILD WHEEL SVG ================= */
+  var svgNS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("wheelSvg");
+
+  function polar(r, angleDeg){
+    var a = (angleDeg) * Math.PI / 180;
+    return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+  }
+
+  // defs: subtle carbon-fiber-like weave pattern + gradients
+  var defs = document.createElementNS(svgNS, "defs");
+  defs.innerHTML =
+    '<pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+      '<rect width="8" height="8" fill="rgba(255,255,255,0)"/>' +
+      '<line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.035)" stroke-width="3"/>' +
+      '<line x1="4" y1="0" x2="4" y2="8" stroke="rgba(0,0,0,0.25)" stroke-width="3"/>' +
+    '</pattern>' +
+    '<radialGradient id="segGlowA" cx="50%" cy="50%" r="70%">' +
+      '<stop offset="0%" stop-color="#1c1e23"/><stop offset="100%" stop-color="#121317"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="segGlowB" cx="50%" cy="50%" r="70%">' +
+      '<stop offset="0%" stop-color="#232529"/><stop offset="100%" stop-color="#17181c"/>' +
+    '</radialGradient>';
+  svg.appendChild(defs);
+
+  var segGroup = document.createElementNS(svgNS, "g");
+  svg.appendChild(segGroup);
+
+  for(var i=0;i<SEGMENTS;i++){
+    var startTop = i * SEG_ANGLE;        // clockwise-from-top convention
+    var endTop   = (i+1) * SEG_ANGLE;
+    var startSvg = startTop - 90;        // convert to svg-native angle
+    var endSvg   = endTop - 90;
+
+    var p1 = polar(OUTER_R, startSvg);
+    var p2 = polar(OUTER_R, endSvg);
+    var i1 = polar(INNER_R, startSvg);
+    var i2 = polar(INNER_R, endSvg);
+
+    var d = "M " + i1[0] + " " + i1[1] +
+            " L " + p1[0] + " " + p1[1] +
+            " A " + OUTER_R + " " + OUTER_R + " 0 0 1 " + p2[0] + " " + p2[1] +
+            " L " + i2[0] + " " + i2[1] +
+            " A " + INNER_R + " " + INNER_R + " 0 0 0 " + i1[0] + " " + i1[1] +
+            " Z";
+
+    var path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", (i % 2 === 0) ? "url(#segGlowA)" : "url(#segGlowB)");
+    path.setAttribute("stroke", "rgba(232,185,35,0.28)");
+    path.setAttribute("stroke-width", "1.5");
+    segGroup.appendChild(path);
+
+    var weave = document.createElementNS(svgNS, "path");
+    weave.setAttribute("d", d);
+    weave.setAttribute("fill", "url(#weave)");
+    weave.setAttribute("stroke", "none");
+    segGroup.appendChild(weave);
+
+    // thin gold divider line at the boundary
+    var divLine = document.createElementNS(svgNS, "line");
+    divLine.setAttribute("x1", i1[0]); divLine.setAttribute("y1", i1[1]);
+    divLine.setAttribute("x2", p1[0]); divLine.setAttribute("y2", p1[1]);
+    divLine.setAttribute("stroke", "rgba(232,185,35,0.35)");
+    divLine.setAttribute("stroke-width", "2");
+    segGroup.appendChild(divLine);
+
+    // label
+    var midTop = startTop + SEG_ANGLE/2;
+    var midSvg = midTop - 90;
+    var textR = (OUTER_R + INNER_R) / 2 + 6;
+    var tpos = polar(textR, midSvg);
+
+    var text = document.createElementNS(svgNS, "text");
+    text.setAttribute("class", "seg-label");
+    text.setAttribute("x", tpos[0]);
+    text.setAttribute("y", tpos[1]);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("font-size", categories[i].length > 10 ? "17" : "19");
+    // rotate label so it reads outward along the wedge, upright-ish
+    var rot = midTop;
+    if(rot > 90 && rot < 270){ rot += 180; } // flip so text never appears upside-down
+    text.setAttribute("transform", "rotate(" + rot + " " + tpos[0] + " " + tpos[1] + ")");
+
+    var lines = categories[i].split("\n");
+    lines.forEach(function(line, idx){
+      var tspan = document.createElementNS(svgNS, "tspan");
+      tspan.setAttribute("x", tpos[0]);
+      tspan.setAttribute("dy", idx === 0 ? (-(lines.length-1) * 10) : 20);
+      tspan.textContent = line;
+      text.appendChild(tspan);
+    });
+    segGroup.appendChild(text);
+  }
+
+  // bolt ring (mechanical detail) on the outer edge, over the disc
+  var boltGroup = document.createElementNS(svgNS, "g");
+  var BOLT_COUNT = 20;
+  for(var b=0;b<BOLT_COUNT;b++){
+    var ang = (360/BOLT_COUNT) * b;
+    var bp = polar(BOLT_R, ang - 90);
+    var bolt = document.createElementNS(svgNS, "circle");
+    bolt.setAttribute("cx", bp[0]);
+    bolt.setAttribute("cy", bp[1]);
+    bolt.setAttribute("r", "4.2");
+    bolt.setAttribute("fill", "#3c3f45");
+    bolt.setAttribute("stroke", "#111214");
+    bolt.setAttribute("stroke-width", "1");
+    boltGroup.appendChild(bolt);
+  }
+  svg.appendChild(boltGroup);
+
+  // outer ring stroke
+  var ringOuter = document.createElementNS(svgNS, "circle");
+  ringOuter.setAttribute("cx", CX); ringOuter.setAttribute("cy", CY);
+  ringOuter.setAttribute("r", OUTER_R+2);
+  ringOuter.setAttribute("fill", "none");
+  ringOuter.setAttribute("stroke", "rgba(232,185,35,0.55)");
+  ringOuter.setAttribute("stroke-width", "3");
+  svg.appendChild(ringOuter);
+
+  /* ================= AUDIO (Web Audio API, no files) ================= */
+  var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var actx = null;
+  var muted = false;
+
+  function getCtx(){
+    if(!actx){ actx = new AudioCtx(); }
+    if(actx.state === "suspended"){ actx.resume(); }
+    return actx;
+  }
+
+  function tick(volume){
+    if(muted) return;
+    try{
+      var ctx = getCtx();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 1200;
+      gain.gain.value = (volume || 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    }catch(e){}
+  }
+
+  function successChime(){
+    if(muted) return;
+    try{
+      var ctx = getCtx();
+      var notes = [660, 880, 1100];
+      notes.forEach(function(freq, idx){
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = freq;
+        var t0 = ctx.currentTime + idx * 0.11;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.09, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.3);
+      });
+    }catch(e){}
+  }
+
+  var soundBtn = document.getElementById("soundBtn");
+  soundBtn.addEventListener("click", function(){
+    muted = !muted;
+    soundBtn.textContent = muted ? "🔇" : "🔊";
+    if(!muted){ getCtx(); }
+  });
+
+  /* ================= SPIN LOGIC ================= */
+  var wheelDisc = document.getElementById("wheelDisc");
+  var spinBtn = document.getElementById("spinBtn");
+  var statusLine = document.getElementById("statusLine");
+  var overlay = document.getElementById("overlay");
+  var resultName = document.getElementById("resultName");
+  var againBtn = document.getElementById("againBtn");
+  var closeX = document.getElementById("closeX");
+
+  var currentRotation = 0;
+  var spinning = false;
+  var tickRafId = null;
+  var lastSegCrossed = -1;
+
+  function normalize(a){ return ((a % 360) + 360) % 360; }
+
+  function spin(){
+    if(spinning) return;
+    spinning = true;
+    overlay.classList.remove("show");
+    spinBtn.disabled = true;
+    spinBtn.textContent = "SPINNING…";
+    statusLine.textContent = "WHEEL IN MOTION…";
+
+    getCtx();
+
+    var targetIndex = Math.floor(Math.random() * SEGMENTS);
+
+    // Angle (clockwise-from-top) of the CENTER of the target segment
+    var segCenterTop = targetIndex * SEG_ANGLE + SEG_ANGLE/2;
+
+    // We need: (segCenterTop + finalRotation) mod 360 == 0  (i.e. lands under top pointer)
+    var desiredMod = normalize(360 - segCenterTop);
+
+    var currentMod = normalize(currentRotation);
+    var deltaToDesired = normalize(desiredMod - currentMod);
+
+    var fullSpins = 7 + Math.floor(Math.random()*3); // 7-9 extra full rotations
+    var duration = 4200 + Math.random()*1600; // 4.2s - 5.8s
+
+    var newRotation = currentRotation + fullSpins*360 + deltaToDesired;
+
+    wheelDisc.style.transition = "transform " + (duration/1000).toFixed(2) + "s cubic-bezier(0.14, 0.85, 0.20, 1)";
+    wheelDisc.style.transform = "rotate(" + newRotation + "deg)";
+
+    var startTime = performance.now();
+    lastSegCrossed = Math.floor(normalize(0 - currentRotation) / SEG_ANGLE);
+
+    function watchTicks(now){
+      var elapsed = now - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      // approximate current rotation using same cubic-bezier-ish easing feel via elapsed fraction of total delta
+      var approxRotation = currentRotation + (newRotation - currentRotation) * easeOutForTicks(progress);
+      var pointerAngleOnWheel = normalize(0 - approxRotation); // angle on (unrotated) wheel currently under pointer
+      var segNow = Math.floor(pointerAngleOnWheel / SEG_ANGLE);
+      if(segNow !== lastSegCrossed){
+        lastSegCrossed = segNow;
+        var vol = 0.02 + 0.05 * (1-progress);
+        tick(vol);
+      }
+      if(progress < 1 && spinning){
+        tickRafId = requestAnimationFrame(watchTicks);
+      }
+    }
+    tickRafId = requestAnimationFrame(watchTicks);
+
+    setTimeout(function(){
+      finishSpin(targetIndex, newRotation);
+    }, duration + 60);
+  }
+
+  function easeOutForTicks(p){
+    // approximate matches cubic-bezier(0.14,0.85,0.20,1) closely enough for ticking cadence
+    return 1 - Math.pow(1-p, 3);
+  }
+
+  function finishSpin(targetIndex, finalRotation){
+    spinning = false;
+    if(tickRafId) cancelAnimationFrame(tickRafId);
+    currentRotation = finalRotation;
+
+    var isSecondChance = categories[targetIndex].indexOf("SECOND") !== -1;
+
+    var label = categories[targetIndex].replace("\n", " ");
+    resultName.textContent = label;
+    overlay.classList.add("show");
+    successChime();
+    launchConfetti();
+
+    if(isSecondChance){
+      // Extra attempt granted — allow spinning again
+      spinBtn.disabled = false;
+      spinBtn.textContent = "SPIN AGAIN";
+      statusLine.textContent = "SECOND CHANCE — SPIN AGAIN";
+      againBtn.style.display = "block";
+    } else {
+      // One attempt only — lock out further spins
+      spinBtn.disabled = true;
+      spinBtn.textContent = "ATTEMPT USED";
+      statusLine.textContent = "YOUR ATTEMPT IS COMPLETE";
+      againBtn.style.display = "none";
+    }
+  }
+
+  spinBtn.addEventListener("click", spin);
+  againBtn.addEventListener("click", function(){
+    overlay.classList.remove("show");
+    setTimeout(spin, 180);
+  });
+  closeX.addEventListener("click", function(){
+    overlay.classList.remove("show");
+  });
+
+  /* ================= CONFETTI ================= */
+  var canvas = document.getElementById("confettiCanvas");
+  var ctx2d = canvas.getContext("2d");
+  var particles = [];
+  var confettiRunning = false;
+
+  function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  var confettiColors = ["#e8b923", "#ffd75e", "#8b909a", "#f2f0e8", "#5a5f68"];
+
+  function launchConfetti(){
+    var count = 70;
+    var originX = canvas.width/2;
+    var originY = canvas.height*0.32;
+    for(var k=0;k<count;k++){
+      particles.push({
+        x: originX,
+        y: originY,
+        vx: (Math.random()-0.5) * 9,
+        vy: (Math.random()*-6) - 2,
+        size: 4 + Math.random()*5,
+        color: confettiColors[Math.floor(Math.random()*confettiColors.length)],
+        rot: Math.random()*360,
+        vr: (Math.random()-0.5)*14,
+        life: 0,
+        maxLife: 90 + Math.random()*40
+      });
+    }
+    if(!confettiRunning){
+      confettiRunning = true;
+      requestAnimationFrame(animateConfetti);
+    }
+  }
+
+  function animateConfetti(){
+    ctx2d.clearRect(0,0,canvas.width,canvas.height);
+    var stillAlive = false;
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.life++;
+      p.vy += 0.22;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      if(p.life > p.maxLife || p.y > canvas.height+20){
+        particles.splice(i,1);
+        continue;
+      }
+      stillAlive = true;
+      ctx2d.save();
+      ctx2d.translate(p.x, p.y);
+      ctx2d.rotate(p.rot * Math.PI/180);
+      ctx2d.fillStyle = p.color;
+      ctx2d.globalAlpha = Math.max(0, 1 - p.life/p.maxLife);
+      ctx2d.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx2d.restore();
+    }
+    if(stillAlive || particles.length){
+      requestAnimationFrame(animateConfetti);
+    } else {
+      confettiRunning = false;
+      ctx2d.clearRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
